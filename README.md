@@ -2,6 +2,62 @@
 
 Terraform module to provision an Amazon ElastiCache Redis replication group with support for cluster mode, Multi-AZ, AUTH token, encryption at rest and in transit, RBAC, and CloudWatch alarms.
 
+## Architecture Diagram
+
+```mermaid
+flowchart TB
+    subgraph App["Application"]
+        CLIENT["Application\nClient"]
+    end
+
+    subgraph Redis["ElastiCache Redis"]
+        REPL["Replication Group\n(Auto-Failover)"]
+        PRIMARY["Primary Node"]
+        REPLICA1["Replica Node 1"]
+        REPLICA2["Replica Node 2"]
+        REPL --> PRIMARY
+        REPL --> REPLICA1
+        REPL --> REPLICA2
+    end
+
+    subgraph Config["Configuration"]
+        PARAM["Parameter Group\n(Custom Settings)"]
+        SUBNET["Subnet Group\n(Multi-AZ)"]
+    end
+
+    subgraph Security["Security"]
+        SG["Security Group\n(Port 6379)"]
+        ENC_REST["Encryption at Rest\n(KMS)"]
+        ENC_TRANSIT["Encryption\nin Transit (TLS)"]
+        AUTH["AUTH Token\n(Secrets Manager)"]
+    end
+
+    subgraph Monitoring["Monitoring"]
+        CW_CPU["CloudWatch Alarm\n(CPU)"]
+        CW_MEM["CloudWatch Alarm\n(Memory)"]
+        CW_EVICT["CloudWatch Alarm\n(Evictions)"]
+        CW_CONN["CloudWatch Alarm\n(Connections)"]
+    end
+
+    CLIENT --> SG
+    SG --> REPL
+    PARAM --> REPL
+    SUBNET --> REPL
+    ENC_REST --> REPL
+    ENC_TRANSIT --> REPL
+    AUTH --> REPL
+    REPL --> CW_CPU
+    REPL --> CW_MEM
+    REPL --> CW_EVICT
+    REPL --> CW_CONN
+
+    style App fill:#FF9900,color:#fff
+    style Redis fill:#0078D4,color:#fff
+    style Config fill:#3F8624,color:#fff
+    style Security fill:#DD344C,color:#fff
+    style Monitoring fill:#8C4FFF,color:#fff
+```
+
 ## Features
 
 - **Cluster Mode** - Optional cluster mode with configurable number of shards and replicas per shard
