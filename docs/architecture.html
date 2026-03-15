@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>terraform-aws-elasticache-redis | Architecture</title>
+<style>
+:root{--ink:#0b0c0b;--accent:#c8420a;--surface:#141514;--border:#2a2b2a;--text:#d4d4d4;--muted:#8a8a8a;--card:#1a1b1a;--green:#2ea043;--blue:#4493f8;--yellow:#d29922;--red:#f85149}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--ink);color:var(--text);font-family:'SF Mono','Cascadia Code','Fira Code',monospace;font-size:14px;line-height:1.7}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.container{max-width:1200px;margin:0 auto;padding:2rem}
+header{border-bottom:2px solid var(--accent);padding-bottom:1.5rem;margin-bottom:2.5rem}
+header h1{font-size:1.8rem;color:#fff;letter-spacing:-0.5px}
+header .subtitle{color:var(--muted);margin-top:0.3rem;font-size:0.95rem}
+h2{font-size:1.3rem;color:var(--accent);margin:2.5rem 0 1rem;padding-bottom:0.4rem;border-bottom:1px solid var(--border)}
+h3{font-size:1rem;color:#fff;margin:1.5rem 0 0.5rem}
+.badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:0.75rem;font-weight:600;margin-right:0.4rem}
+.badge-green{background:rgba(46,160,67,0.15);color:var(--green);border:1px solid rgba(46,160,67,0.3)}
+.badge-blue{background:rgba(68,147,248,0.15);color:var(--blue);border:1px solid rgba(68,147,248,0.3)}
+.badge-yellow{background:rgba(210,153,34,0.15);color:var(--yellow);border:1px solid rgba(210,153,34,0.3)}
+.badge-red{background:rgba(248,81,73,0.15);color:var(--red);border:1px solid rgba(248,81,73,0.3)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin:1rem 0}
+.card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1.2rem}
+.card .label{font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.card .value{font-size:1.4rem;color:#fff;margin-top:0.3rem;font-weight:700}
+.card .detail{font-size:0.8rem;color:var(--muted);margin-top:0.2rem}
+.arch-diagram{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:2rem;margin:1rem 0;overflow-x:auto}
+.flow-row{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;justify-content:center;margin:0.5rem 0}
+.flow-box{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:0.6rem 1rem;text-align:center;font-size:0.8rem;min-width:120px}
+.flow-box.primary{border-color:var(--accent);color:var(--accent)}
+.flow-box.green{border-color:var(--green);color:var(--green)}
+.flow-box.blue{border-color:var(--blue);color:var(--blue)}
+.flow-box.yellow{border-color:var(--yellow);color:var(--yellow)}
+.flow-box.red{border-color:var(--red);color:var(--red)}
+.flow-arrow{color:var(--muted);font-size:1.2rem}
+table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:0.85rem}
+th,td{text-align:left;padding:0.5rem 0.8rem;border-bottom:1px solid var(--border)}
+th{color:var(--muted);font-weight:600;text-transform:uppercase;font-size:0.7rem;letter-spacing:1px}
+td code{background:var(--surface);padding:1px 5px;border-radius:3px;font-size:0.8rem}
+.checklist{list-style:none;padding:0}
+.checklist li{padding:0.3rem 0;padding-left:1.5rem;position:relative}
+.checklist li::before{content:"[ ]";position:absolute;left:0;color:var(--muted);font-size:0.8rem}
+.section-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1rem}
+.info-block{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1.2rem;margin:0.5rem 0}
+.info-block h4{color:var(--accent);margin-bottom:0.5rem;font-size:0.9rem}
+.info-block ul{padding-left:1.2rem;color:var(--muted);font-size:0.85rem}
+.info-block li{margin:0.2rem 0}
+footer{margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--border);color:var(--muted);font-size:0.75rem;text-align:center}
+.exec-summary{background:var(--surface);border-left:3px solid var(--accent);padding:1.2rem 1.5rem;margin:1rem 0;border-radius:0 6px 6px 0;font-size:0.9rem;line-height:1.8}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>terraform-aws-elasticache-redis</h1>
+<div class="subtitle">ElastiCache Redis replication group with cluster mode, Multi-AZ, AUTH, encryption, and CloudWatch alarms</div>
+<div style="margin-top:0.8rem">
+<span class="badge badge-green">Terraform &ge; 1.0</span>
+<span class="badge badge-blue">AWS Provider &ge; 5.0</span>
+<span class="badge badge-yellow">Redis 7.1</span>
+<span class="badge badge-red">Encryption at Rest + In Transit</span>
+</div>
+</header>
+
+<h2>Executive Summary</h2>
+<div class="exec-summary">
+This module deploys an Amazon ElastiCache Redis replication group with full support for cluster mode (sharding), Multi-AZ automatic failover, AUTH token authentication stored in AWS Secrets Manager, encryption at rest via KMS, encryption in transit via TLS, custom parameter groups, and four CloudWatch metric alarms (CPU, memory, evictions, connections). It provisions a dedicated security group, subnet group, and parameter group. The module supports both standard replication (primary + replicas) and cluster mode with configurable shards and replicas per shard.
+</div>
+
+<h2>Overview</h2>
+<div class="cards">
+<div class="card"><div class="label">Resources Created</div><div class="value">10+</div><div class="detail">Replication Group, Subnet Group, Parameter Group, SG, Secrets Manager, CW Alarms</div></div>
+<div class="card"><div class="label">Input Variables</div><div class="value">22</div><div class="detail">name, node_type, engine_version, encryption, failover, snapshots, etc.</div></div>
+<div class="card"><div class="label">Outputs</div><div class="value">12</div><div class="detail">endpoints, SG, parameter group, subnet group, auth secret ARN</div></div>
+<div class="card"><div class="label">Default Port</div><div class="value">6379</div><div class="detail">Configurable via var.port</div></div>
+</div>
+
+<h2>Architecture Diagram</h2>
+<div class="arch-diagram">
+<div class="flow-row">
+<div class="flow-box primary">Application Client</div>
+</div>
+<div class="flow-row"><span class="flow-arrow">&darr;</span></div>
+<div class="flow-row">
+<div class="flow-box red">Security Group<br><small>Port 6379 (TCP)</small></div>
+<div class="flow-box red">AUTH Token<br><small>Secrets Manager</small></div>
+<div class="flow-box red">TLS Encryption<br><small>In Transit</small></div>
+</div>
+<div class="flow-row"><span class="flow-arrow">&darr;</span></div>
+<div class="flow-row">
+<div class="flow-box primary">Replication Group<br><small>Auto-Failover</small></div>
+</div>
+<div class="flow-row"><span class="flow-arrow">&darr;</span></div>
+<div class="flow-row">
+<div class="flow-box green">Primary Node</div>
+<div class="flow-box blue">Replica Node 1</div>
+<div class="flow-box blue">Replica Node 2</div>
+</div>
+<div class="flow-row"><span class="flow-arrow">&darr;</span></div>
+<div class="flow-row">
+<div class="flow-box yellow">Parameter Group<br><small>Custom Settings</small></div>
+<div class="flow-box yellow">Subnet Group<br><small>Multi-AZ</small></div>
+<div class="flow-box red">KMS Key<br><small>At-Rest Encryption</small></div>
+</div>
+<div class="flow-row"><span class="flow-arrow">&darr;</span></div>
+<div class="flow-row">
+<div class="flow-box blue">CW: CPU</div>
+<div class="flow-box blue">CW: Memory</div>
+<div class="flow-box blue">CW: Evictions</div>
+<div class="flow-box blue">CW: Connections</div>
+</div>
+</div>
+
+<h2>Component Breakdown</h2>
+<div class="section-grid">
+<div class="info-block">
+<h4>Replication Group</h4>
+<ul>
+<li>Redis 7.1 engine (configurable)</li>
+<li>Standard mode: num_cache_clusters (primary + replicas)</li>
+<li>Cluster mode: num_node_groups x replicas_per_node_group</li>
+<li>Automatic failover with Multi-AZ</li>
+<li>Configurable backup window and retention</li>
+<li>Maintenance window and auto minor version upgrades</li>
+</ul>
+</div>
+<div class="info-block">
+<h4>Security</h4>
+<ul>
+<li>Dedicated VPC security group</li>
+<li>Ingress from security group IDs or CIDR blocks</li>
+<li>AUTH token (64-char password) stored in Secrets Manager</li>
+<li>KMS encryption at rest (customer key or AWS managed)</li>
+<li>TLS transit encryption enabled by default</li>
+</ul>
+</div>
+<div class="info-block">
+<h4>Configuration</h4>
+<ul>
+<li>Custom parameter group (redis7 family)</li>
+<li>User-defined parameters via custom_parameters map</li>
+<li>Subnet group across multiple AZs</li>
+<li>Log delivery to CloudWatch or Kinesis Firehose</li>
+</ul>
+</div>
+<div class="info-block">
+<h4>Monitoring</h4>
+<ul>
+<li>CPU utilization alarm (threshold: 80%)</li>
+<li>Database memory usage alarm (threshold: 80%)</li>
+<li>Evictions alarm (threshold: &gt; 0)</li>
+<li>Current connections alarm (threshold: 50,000)</li>
+<li>SNS notifications for alarm actions</li>
+</ul>
+</div>
+</div>
+
+<h2>Data Flow</h2>
+<div class="info-block">
+<ol style="padding-left:1.2rem;color:var(--muted);font-size:0.85rem">
+<li>Application connects to Redis via primary or reader endpoint</li>
+<li>Security group validates inbound traffic on port 6379</li>
+<li>TLS handshake encrypts the connection in transit</li>
+<li>AUTH token validates client identity</li>
+<li>Write operations hit the primary node; reads can use replica endpoints</li>
+<li>Data at rest is encrypted via KMS key</li>
+<li>Automatic failover promotes a replica if primary fails (Multi-AZ)</li>
+<li>CloudWatch alarms monitor performance and notify via SNS</li>
+</ol>
+</div>
+
+<h2>Security Controls</h2>
+<table>
+<tr><th>Control</th><th>Implementation</th><th>Default</th></tr>
+<tr><td>Network Isolation</td><td>VPC security group with explicit ingress rules</td><td>No open access</td></tr>
+<tr><td>Authentication</td><td>64-char AUTH token via random_password</td><td><code>auth_token_enabled=true</code></td></tr>
+<tr><td>Secret Storage</td><td>AUTH token stored in AWS Secrets Manager (KMS encrypted)</td><td>Auto-created</td></tr>
+<tr><td>Encryption at Rest</td><td>KMS key (customer-managed or AWS default)</td><td><code>at_rest_encryption_enabled=true</code></td></tr>
+<tr><td>Encryption in Transit</td><td>TLS connections required</td><td><code>transit_encryption_enabled=true</code></td></tr>
+<tr><td>High Availability</td><td>Automatic failover + Multi-AZ</td><td><code>both=true</code></td></tr>
+<tr><td>Backup</td><td>Daily snapshots with configurable retention</td><td>7 days, 03:00-05:00 UTC</td></tr>
+</table>
+
+<h2>Industry Adaptation</h2>
+<div class="section-grid">
+<div class="info-block">
+<h4>E-Commerce / Session Cache</h4>
+<ul>
+<li>Standard mode with 2-3 replicas for read scaling</li>
+<li>Low-latency cache.r6g instances</li>
+<li>AUTH + TLS for PCI compliance</li>
+<li>Eviction alarms prevent data loss</li>
+</ul>
+</div>
+<div class="info-block">
+<h4>Real-Time Analytics</h4>
+<ul>
+<li>Cluster mode with multiple shards for throughput</li>
+<li>High connection limit monitoring (50k threshold)</li>
+<li>Log delivery to Kinesis Firehose</li>
+</ul>
+</div>
+<div class="info-block">
+<h4>Healthcare / Financial</h4>
+<ul>
+<li>Customer-managed KMS keys</li>
+<li>Transit encryption mandatory</li>
+<li>Secrets Manager for credential rotation</li>
+<li>SNS alarms for immediate incident response</li>
+</ul>
+</div>
+</div>
+
+<h2>Production Readiness Checklist</h2>
+<ul class="checklist">
+<li>Enable <code>at_rest_encryption_enabled</code> and <code>transit_encryption_enabled</code></li>
+<li>Enable <code>auth_token_enabled</code> for authentication</li>
+<li>Set <code>automatic_failover_enabled = true</code> and <code>multi_az_enabled = true</code></li>
+<li>Use at least 2 subnets across AZs</li>
+<li>Configure <code>snapshot_retention_limit &ge; 7</code></li>
+<li>Provide <code>notification_topic_arn</code> for CloudWatch alarm actions</li>
+<li>Use <code>apply_immediately = false</code> in production</li>
+<li>Supply a customer-managed <code>kms_key_arn</code> for compliance</li>
+<li>Review and tune custom_parameters for workload</li>
+<li>Monitor all 4 CloudWatch alarms</li>
+</ul>
+
+<h2>Configuration Reference</h2>
+<h3>Key Inputs</h3>
+<table>
+<tr><th>Variable</th><th>Type</th><th>Default</th><th>Description</th></tr>
+<tr><td><code>name</code></td><td>string</td><td>--</td><td>Replication group name (required)</td></tr>
+<tr><td><code>node_type</code></td><td>string</td><td><code>cache.t3.medium</code></td><td>Instance class</td></tr>
+<tr><td><code>engine_version</code></td><td>string</td><td><code>7.1</code></td><td>Redis engine version</td></tr>
+<tr><td><code>num_cache_clusters</code></td><td>number</td><td><code>2</code></td><td>Primary + replicas (non-cluster mode)</td></tr>
+<tr><td><code>num_node_groups</code></td><td>number</td><td><code>0</code></td><td>Shards (cluster mode, 0=disabled)</td></tr>
+<tr><td><code>at_rest_encryption_enabled</code></td><td>bool</td><td><code>true</code></td><td>KMS encryption at rest</td></tr>
+<tr><td><code>transit_encryption_enabled</code></td><td>bool</td><td><code>true</code></td><td>TLS in transit</td></tr>
+<tr><td><code>auth_token_enabled</code></td><td>bool</td><td><code>true</code></td><td>AUTH password</td></tr>
+<tr><td><code>snapshot_retention_limit</code></td><td>number</td><td><code>7</code></td><td>Backup retention days</td></tr>
+<tr><td><code>automatic_failover_enabled</code></td><td>bool</td><td><code>true</code></td><td>Auto failover</td></tr>
+</table>
+
+<h3>Key Outputs</h3>
+<table>
+<tr><th>Output</th><th>Description</th></tr>
+<tr><td><code>primary_endpoint_address</code></td><td>Primary node endpoint</td></tr>
+<tr><td><code>reader_endpoint_address</code></td><td>Reader endpoint for replicas</td></tr>
+<tr><td><code>configuration_endpoint_address</code></td><td>Cluster mode configuration endpoint</td></tr>
+<tr><td><code>security_group_id</code></td><td>Redis security group ID</td></tr>
+<tr><td><code>auth_token_secret_arn</code></td><td>Secrets Manager ARN for AUTH token</td></tr>
+</table>
+
+<h2>Deployment</h2>
+<div class="info-block">
+<pre style="color:var(--text);font-size:0.85rem">
+# Initialize
+terraform init
+
+# Plan
+terraform plan -var-file="redis.tfvars"
+
+# Apply
+terraform apply -var-file="redis.tfvars"
+
+# Verify connectivity
+redis-cli -h &lt;primary_endpoint&gt; -p 6379 --tls --askpass PING
+</pre>
+</div>
+
+<h2>Links &amp; References</h2>
+<div class="section-grid">
+<div class="info-block">
+<h4>AWS Documentation</h4>
+<ul>
+<li><a href="https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/">ElastiCache Redis User Guide</a></li>
+<li><a href="https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/at-rest-encryption.html">Encryption at Rest</a></li>
+<li><a href="https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/in-transit-encryption.html">In-Transit Encryption</a></li>
+</ul>
+</div>
+<div class="info-block">
+<h4>Module Resources</h4>
+<ul>
+<li><a href="../examples/basic/">Example: Basic</a></li>
+<li><a href="../examples/advanced/">Example: Advanced (Cluster Mode)</a></li>
+<li><a href="../examples/complete/">Example: Complete</a></li>
+</ul>
+</div>
+</div>
+
+<footer>
+terraform-aws-elasticache-redis | Architecture Documentation | Generated 2026-03-15 | MIT License
+</footer>
+</div>
+</body>
+</html>
