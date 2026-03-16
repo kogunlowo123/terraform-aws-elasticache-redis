@@ -19,8 +19,8 @@ output "reader_endpoint_address" {
 }
 
 output "configuration_endpoint_address" {
-  description = "Address of the configuration endpoint for the replication group (cluster mode only)."
-  value       = local.cluster_mode_enabled ? aws_elasticache_replication_group.this.configuration_endpoint_address : null
+  description = "Configuration endpoint address for cluster mode (null when disabled)."
+  value       = var.num_node_groups > 0 ? aws_elasticache_replication_group.this.configuration_endpoint_address : null
 }
 
 output "port" {

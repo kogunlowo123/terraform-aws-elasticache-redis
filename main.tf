@@ -17,7 +17,7 @@ resource "aws_secretsmanager_secret" "auth_token" {
   description = "Auth token for ElastiCache Redis replication group ${var.name}"
   kms_key_id  = var.kms_key_arn
 
-  tags = local.default_tags
+  tags = var.tags
 }
 
 resource "aws_secretsmanager_secret_version" "auth_token" {
@@ -35,7 +35,7 @@ resource "aws_elasticache_subnet_group" "this" {
   name       = var.name
   subnet_ids = var.subnet_ids
 
-  tags = local.default_tags
+  tags = var.tags
 }
 
 ################################################################################
@@ -47,7 +47,7 @@ resource "aws_elasticache_parameter_group" "this" {
   family = var.parameter_group_family
 
   dynamic "parameter" {
-    for_each = local.all_parameters
+    for_each = merge(var.num_node_groups > 0 ? { "cluster-enabled" = "yes" } : {}, var.custom_parameters)
 
     content {
       name  = parameter.key
@@ -55,7 +55,7 @@ resource "aws_elasticache_parameter_group" "this" {
     }
   }
 
-  tags = local.default_tags
+  tags = var.tags
 
   lifecycle {
     create_before_destroy = true
@@ -71,7 +71,7 @@ resource "aws_security_group" "this" {
   description = "Security group for ElastiCache Redis ${var.name}"
   vpc_id      = var.vpc_id
 
-  tags = local.default_tags
+  tags = var.tags
 }
 
 resource "aws_security_group_rule" "ingress_security_groups" {
@@ -123,34 +123,27 @@ resource "aws_elasticache_replication_group" "this" {
   subnet_group_name    = aws_elasticache_subnet_group.this.name
   security_group_ids   = [aws_security_group.this.id]
 
-  # Cluster configuration
-  num_cache_clusters = local.cluster_mode_enabled ? null : var.num_cache_clusters
-  num_node_groups    = local.cluster_mode_enabled ? var.num_node_groups : null
-  replicas_per_node_group = local.cluster_mode_enabled ? var.replicas_per_node_group : null
+  num_cache_clusters      = var.num_node_groups > 0 ? null : var.num_cache_clusters
+  num_node_groups         = var.num_node_groups > 0 ? var.num_node_groups : null
+  replicas_per_node_group = var.num_node_groups > 0 ? var.replicas_per_node_group : null
 
-  # High availability
   automatic_failover_enabled = var.automatic_failover_enabled
   multi_az_enabled           = var.multi_az_enabled
 
-  # Encryption
   at_rest_encryption_enabled = var.at_rest_encryption_enabled
   transit_encryption_enabled = var.transit_encryption_enabled
   kms_key_id                 = var.kms_key_arn
   auth_token                 = var.auth_token_enabled ? random_password.auth_token[0].result : null
 
-  # Backup
   snapshot_retention_limit = var.snapshot_retention_limit
   snapshot_window          = var.snapshot_window
 
-  # Maintenance
   maintenance_window         = var.maintenance_window
   auto_minor_version_upgrade = var.auto_minor_version_upgrade
   apply_immediately          = var.apply_immediately
 
-  # Notifications
   notification_topic_arn = var.notification_topic_arn
 
-  # Log delivery
   dynamic "log_delivery_configuration" {
     for_each = var.log_delivery_configurations
 
@@ -162,7 +155,7 @@ resource "aws_elasticache_replication_group" "this" {
     }
   }
 
-  tags = local.default_tags
+  tags = var.tags
 }
 
 ################################################################################
@@ -188,7 +181,7 @@ resource "aws_cloudwatch_metric_alarm" "cpu" {
   alarm_actions = var.notification_topic_arn != null ? [var.notification_topic_arn] : []
   ok_actions    = var.notification_topic_arn != null ? [var.notification_topic_arn] : []
 
-  tags = local.default_tags
+  tags = var.tags
 }
 
 resource "aws_cloudwatch_metric_alarm" "memory" {
@@ -210,7 +203,7 @@ resource "aws_cloudwatch_metric_alarm" "memory" {
   alarm_actions = var.notification_topic_arn != null ? [var.notification_topic_arn] : []
   ok_actions    = var.notification_topic_arn != null ? [var.notification_topic_arn] : []
 
-  tags = local.default_tags
+  tags = var.tags
 }
 
 resource "aws_cloudwatch_metric_alarm" "evictions" {
@@ -232,7 +225,7 @@ resource "aws_cloudwatch_metric_alarm" "evictions" {
   alarm_actions = var.notification_topic_arn != null ? [var.notification_topic_arn] : []
   ok_actions    = var.notification_topic_arn != null ? [var.notification_topic_arn] : []
 
-  tags = local.default_tags
+  tags = var.tags
 }
 
 resource "aws_cloudwatch_metric_alarm" "connections" {
@@ -254,5 +247,5 @@ resource "aws_cloudwatch_metric_alarm" "connections" {
   alarm_actions = var.notification_topic_arn != null ? [var.notification_topic_arn] : []
   ok_actions    = var.notification_topic_arn != null ? [var.notification_topic_arn] : []
 
-  tags = local.default_tags
+  tags = var.tags
 }

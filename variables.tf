@@ -22,13 +22,13 @@ variable "node_type" {
 }
 
 variable "num_cache_clusters" {
-  description = "Number of cache clusters (primary and replicas) for the replication group. Ignored when cluster mode is enabled (num_node_groups > 0)."
+  description = "Number of cache clusters (primary and replicas); ignored when cluster mode is enabled."
   type        = number
   default     = 2
 }
 
 variable "num_node_groups" {
-  description = "Number of node groups (shards) for cluster mode. Set to 0 to disable cluster mode."
+  description = "Number of node groups (shards) for cluster mode; set to 0 to disable."
   type        = number
   default     = 0
 }
@@ -40,7 +40,7 @@ variable "replicas_per_node_group" {
 }
 
 variable "parameter_group_family" {
-  description = "The family of the ElastiCache parameter group (e.g., redis7)."
+  description = "The family of the ElastiCache parameter group (e.g. redis7)."
   type        = string
   default     = "redis7"
 }
@@ -92,13 +92,13 @@ variable "transit_encryption_enabled" {
 }
 
 variable "auth_token_enabled" {
-  description = "Whether to enable AUTH token (password) for Redis. Requires transit encryption to be enabled."
+  description = "Whether to enable AUTH token (password) for Redis."
   type        = bool
   default     = true
 }
 
 variable "kms_key_arn" {
-  description = "ARN of the KMS key to use for encryption at rest. If not specified, the default AWS managed key is used."
+  description = "ARN of the KMS key for encryption at rest; uses default AWS managed key if null."
   type        = string
   default     = null
 }
@@ -116,19 +116,19 @@ variable "multi_az_enabled" {
 }
 
 variable "snapshot_retention_limit" {
-  description = "Number of days to retain automatic snapshots. Set to 0 to disable backups."
+  description = "Number of days to retain automatic snapshots; set to 0 to disable."
   type        = number
   default     = 7
 }
 
 variable "snapshot_window" {
-  description = "Daily time range during which automated backups are created (e.g., 03:00-05:00 UTC)."
+  description = "Daily time range for automated backups (e.g. 03:00-05:00 UTC)."
   type        = string
   default     = "03:00-05:00"
 }
 
 variable "maintenance_window" {
-  description = "Weekly time range during which maintenance can occur (e.g., sun:05:00-sun:07:00 UTC)."
+  description = "Weekly time range for maintenance (e.g. sun:05:00-sun:07:00 UTC)."
   type        = string
   default     = "sun:05:00-sun:07:00"
 }
@@ -140,13 +140,13 @@ variable "notification_topic_arn" {
 }
 
 variable "apply_immediately" {
-  description = "Whether changes should be applied immediately or during the next maintenance window."
+  description = "Whether changes should be applied immediately or during maintenance."
   type        = bool
   default     = false
 }
 
 variable "auto_minor_version_upgrade" {
-  description = "Whether minor engine upgrades will be applied automatically during the maintenance window."
+  description = "Whether minor engine upgrades are applied automatically during maintenance."
   type        = bool
   default     = true
 }
