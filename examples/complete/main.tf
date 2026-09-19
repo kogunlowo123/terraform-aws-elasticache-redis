@@ -83,8 +83,8 @@ module "redis" {
   parameter_group_family = "redis7"
 
   custom_parameters = {
-    "maxmemory-policy"     = "volatile-lru"
-    "notify-keyspace-events" = "Ex"
+    "maxmemory-policy"        = "volatile-lru"
+    "notify-keyspace-events"  = "Ex"
     "slowlog-log-slower-than" = "10000"
   }
 
